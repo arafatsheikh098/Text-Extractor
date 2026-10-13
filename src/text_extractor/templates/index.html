@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text Extractor — PDF &amp; Image to Text</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<noscript><p class="noscript">This tool needs JavaScript. Turn it on in your browser and reload.</p></noscript>
+
+<div class="wrap">
+
+  <!-- top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">T</div>
+      <div>
+        <h1>Text Extractor<span class="badge">v1.0</span></h1>
+        <p>Turn PDFs and photos of pages into text you can copy and edit. Your files stay on this computer.</p>
+      </div>
+    </div>
+    <div class="status-pill" id="status-pill" title="Tesseract status">
+      <span class="dot"></span><span id="status-text">Checking…</span>
+    </div>
+  </header>
+
+  <!-- stats strip -->
+  <section class="stats" aria-label="Job statistics">
+    <div class="stat">
+      <p class="stat-label">Files</p>
+      <p class="stat-value" id="stat-files">0</p>
+      <p class="stat-sub" id="stat-files-sub">No files yet</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Pages read</p>
+      <p class="stat-value" id="stat-pages">0</p>
+      <p class="stat-sub" id="stat-pages-sub">Waiting to start</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Characters</p>
+      <p class="stat-value" id="stat-chars">0</p>
+      <p class="stat-sub" id="stat-chars-sub">No text extracted yet</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Time</p>
+      <p class="stat-value" id="stat-time">0:00</p>
+      <p class="stat-sub" id="stat-time-sub">Idle</p>
+    </div>
+  </section>
+
+  <div class="workspace">
+
+    <!-- left column: input + options -->
+    <section class="glass glass-pad" aria-label="Files to read">
+
+      <input id="file-input" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif,application/pdf,image/*">
+      <label class="sheet" id="sheet" for="file-input">
+        <span class="icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        <span class="big">Drop PDFs or images here</span>
+        <span class="small">PDF, PNG, JPG, TIFF, BMP, WebP or GIF — up to <span id="limit-mb">200</span>&nbsp;MB</span>
+        <span class="pick">Choose files</span>
+      </label>
+
+      <ul class="file-list" id="files" aria-label="Selected files"></ul>
+
+      <div class="options">
+
+        <div>
+          <p class="section-title">Language in the files</p>
+          <div class="lang-grid" id="lang-list"></div>
+          <p class="hint" id="lang-hint">Pick every language that appears in your files.</p>
+        </div>
+
+        <details class="advanced">
+          <summary>More options</summary>
+          <div class="advanced-body">
+            <label class="toggle">
+              <input type="checkbox" id="force-ocr">
+              <span class="switch"></span>
+              <span class="toggle-label">Read every PDF page as an image<small>Use this when text copied from a PDF looks like random symbols.</small></span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="page-markers">
+              <span class="switch"></span>
+              <span class="toggle-label">Add page numbers to the text<small>Inserts “--- Page N ---” between pages.</small></span>
+            </label>
+            <div class="select-pill">
+              <span class="toggle-label">Scan quality</span>
+              <select id="dpi">
+                <option value="200">Fast (200)</option>
+                <option value="300" selected>Balanced (300)</option>
+                <option value="400">Best (400, slower)</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="go" type="button" disabled>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <span id="go-label">Extract text</span>
+        </button>
+        <button class="btn" id="cancel" type="button" hidden>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          Cancel
+        </button>
+        <button class="btn" id="zip" type="button" hidden>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span id="zip-label">Download all as .zip</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- right column: reader -->
+    <section class="glass reader" aria-labelledby="reader-title">
+
+      <div class="empty" id="reader-empty">
+        <div class="empty-art" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        </div>
+        <h3>Your text appears here</h3>
+        <p>Add one or more files on the left, then choose <strong>Extract text</strong>.</p>
+      </div>
+
+      <div id="reader-body" hidden>
+        <div class="reader-head">
+          <div class="reader-title-wrap">
+            <h2 id="reader-title"></h2>
+            <p class="meta" id="reader-meta"></p>
+          </div>
+          <div class="reader-actions">
+            <div class="search-wrap" id="search-wrap" hidden>
+              <input id="search" type="search" placeholder="Search in text…" aria-label="Search in extracted text" autocomplete="off">
+              <span class="count" id="search-count"></span>
+              <button id="search-prev" type="button" aria-label="Previous match" title="Previous match">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+              <button id="search-next" type="button" aria-label="Next match" title="Next match">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+            <button class="btn" id="copy" type="button" hidden>
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+            <button class="btn" id="download" type="button" hidden>
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </button>
+          </div>
+        </div>
+
+        <p class="progress-line" id="reader-msg" role="status" aria-live="polite" hidden></p>
+
+        <!-- rendered text with search highlights (when done) -->
+        <div class="text-shell" id="text-shell" hidden>
+          <div class="text-render" id="text-render" tabindex="0" aria-label="Extracted text"></div>
+          <textarea id="reader-text" aria-label="Extracted text (editable)" spellcheck="false" hidden></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+<script src="{{ url_for('static', filename='app.js') }}" nonce="{{ nonce }}"></script>
+</body>
+</html>
