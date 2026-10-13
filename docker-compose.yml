@@ -1,0 +1,23 @@
+services:
+  text-extractor:
+    build: .
+    image: ghcr.io/arafatsheikh098/text-extractor:latest
+    container_name: text-extractor
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      # Set to 1 to allow remote network access (no authentication).
+      - ALLOW_REMOTE=0
+      - OCR_WORKERS=1
+      - MAX_UPLOAD_MB=200
+      - TRUSTED_PROXIES=0
+    # Optional: mount custom language models or custom traineddata files
+    # volumes:
+    #   - ./tessdata:/usr/share/tesseract-ocr/5/tessdata:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/info', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
