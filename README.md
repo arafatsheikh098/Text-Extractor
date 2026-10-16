@@ -42,6 +42,14 @@ Most OCR utilities either upload your sensitive documents to remote third-party 
 
 ---
 
+## 📸 Visual Tour & Web Dashboard
+
+| Drag & Drop Web Interface | Live Extraction & Real-Time Stats |
+| :---: | :---: |
+| ![Web Dashboard](docs/screenshots/01-web-dashboard.png) | ![Extraction Workflow](docs/screenshots/02-extraction-workflow.png) |
+
+---
+
 ## 🎯 Key Features
 
 | Feature | Description |
